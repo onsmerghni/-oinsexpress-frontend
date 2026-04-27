@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://oinsexpress-api.onrender.com/api',
-  wsUrl: 'https://oinsexpress-api.onrender.com/ws'
+  apiUrl: 'https://oinsexpress.onrender.com/api',
+  wsUrl: 'https://oinsexpress.onrender.com/ws'
 };
