@@ -36,22 +36,19 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // ✅ 1. Demander permission notifications au démarrage
+    // 1. Demander permission notifications au démarrage
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     this.ws.connect();
 
-    // ✅ 2. Écouter le drivingState retourné par le backend via WebSocket
+    // 2. Écouter le drivingState retourné par le backend via WebSocket
     this.subs.push(
       this.ws.positions$.subscribe(pos => {
         const user = this.auth.currentUser();
         if (pos.livreurId === (user?.livreurId || user?.id)) {
-          // Mettre à jour l'état affiché dans l'app livreur
           this.drivingState.set(pos.drivingState as DrivingState);
-
-          // Envoyer notification si conduite dangereuse
           if (pos.drivingState === 'AGGRESSIVE' || pos.drivingState === 'RISKY') {
             this.showNotification(pos.drivingState as DrivingState);
           }
@@ -104,7 +101,7 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
     this.uptime.set(elapsed >= 3600 ? `${h}:${m}:${s}` : `${m}:${s}`);
   }
 
-  // ✅ Notifications push (centre de notification Android/iPhone)
+  // Notifications push livreur
   private showNotification(state: DrivingState): void {
     if (!('Notification' in window)) return;
 

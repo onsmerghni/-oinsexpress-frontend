@@ -36,11 +36,23 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // ✅ Demander permission notifications au démarrage
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     this.ws.connect();
     this.loadLivreurs();
 
     this.subs.push(
-      this.ws.positions$.subscribe(pos => this.handlePositionUpdate(pos))
+      this.ws.positions$.subscribe(pos => {
+        this.handlePositionUpdate(pos);
+
+        // ✅ Notification boss si livreur AGGRESSIVE ou RISKY
+        if (pos.drivingState === 'AGGRESSIVE' || pos.drivingState === 'RISKY') {
+          this.showNotification(pos);
+        }
+      })
     );
 
     this.subs.push(
@@ -174,6 +186,29 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       </div>
     `;
+  }
+
+  // ✅ Notification push pour le boss
+  private showNotification(pos: LivreurPosition): void {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      new Notification(
+        pos.drivingState === 'AGGRESSIVE'
+          ? `🔴 ${pos.firstName} ${pos.lastName} — Conduite dangereuse !`
+          : `🟡 ${pos.firstName} ${pos.lastName} — Conduite risquée`,
+        {
+          body: pos.drivingState === 'AGGRESSIVE'
+            ? `Livreur ${pos.livreurId} — Intervention urgente !`
+            : `Livreur ${pos.livreurId} — Surveillance recommandée`,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: `alert-${pos.livreurId}`
+        }
+      );
+    } else {
+      Notification.requestPermission();
+    }
   }
 
   selectLivreur(livreur: LivreurPosition): void {
