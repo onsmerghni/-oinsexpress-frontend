@@ -36,8 +36,30 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    //  1. Demander permission notifications au démarrage
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     this.ws.connect();
 
+    //  2. Écouter le drivingState retourné par le backend via WebSocket
+    this.subs.push(
+      this.ws.positions$.subscribe(pos => {
+        const user = this.auth.currentUser();
+        if (pos.livreurId === (user?.livreurId || user?.id)) {
+          // Mettre à jour l'état affiché dans l'app livreur
+          this.drivingState.set(pos.drivingState as DrivingState);
+
+          // Envoyer notification si conduite dangereuse
+          if (pos.drivingState === 'AGGRESSIVE' || pos.drivingState === 'RISKY') {
+            this.showNotification(pos.drivingState as DrivingState);
+          }
+        }
+      })
+    );
+
+    // 3. GPS tracking → envoyer position au backend
     this.subs.push(
       this.geo.startTracking().subscribe(pos => {
         this.position.set(pos);
@@ -61,6 +83,7 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
       })
     );
 
+    // 4. Timer uptime
     this.subs.push(
       interval(1000).subscribe(() => this.updateUptime())
     );
@@ -79,6 +102,28 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
     const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
     const s = (elapsed % 60).toString().padStart(2, '0');
     this.uptime.set(elapsed >= 3600 ? `${h}:${m}:${s}` : `${m}:${s}`);
+  }
+
+  //  Notifications push (centre de notification Android/iPhone)
+  private showNotification(state: DrivingState): void {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'granted') {
+      new Notification(
+        state === 'AGGRESSIVE' ? '🔴 Conduite dangereuse !' : '🟡 Conduite risquée',
+        {
+          body: state === 'AGGRESSIVE'
+            ? 'Ralentissez immédiatement !'
+            : 'Adaptez votre conduite',
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: 'driving-state',   // remplace la notif précédente (pas de spam)
+          renotify: true
+        }
+      );
+    } else {
+      Notification.requestPermission();
+    }
   }
 
   getStateColor(): string {
