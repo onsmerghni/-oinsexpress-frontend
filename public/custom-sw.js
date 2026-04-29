@@ -1,58 +1,54 @@
-// custom-sw.js — Service Worker personnalisé OINSExpress
-// Gère les notifications push même app fermée
+// custom-sw.js — Service Worker OINSExpress
+// Reçoit les push notifications du backend même app fermée
 
 importScripts('ngsw-worker.js');
 
-// Écouter les push notifications
 self.addEventListener('push', function(event) {
   console.log('[SW] Push reçu:', event);
 
   let data = {
-    title: '🔔 OINSExpress Alerte',
-    body: 'Nouvelle alerte de conduite',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: 'oinsexpress-alert',
-    data: { url: '/' }
+    title: '🔔 OINSExpress',
+    body: 'Nouvelle alerte',
+    url: '/boss/map'
   };
 
   if (event.data) {
     try {
-      data = { ...data, ...event.data.json() };
+      data = event.data.json();
     } catch (e) {
       data.body = event.data.text();
     }
   }
 
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    tag: 'oinsexpress-alert',
+    requireInteraction: true,
+    data: { url: data.url || '/boss/map' }
+  };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon,
-      badge: data.badge,
-      tag: data.tag,
-      data: data.data,
-      vibrate: [200, 100, 200],
-      requireInteraction: true  // reste visible jusqu'à interaction
-    })
+    self.registration.showNotification(data.title, options)
   );
 });
 
-// Clic sur la notification → ouvrir l'app
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  const url = event.notification.data?.url || '/boss/map';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(function(clientList) {
-        // Si app déjà ouverte → focus
         for (const client of clientList) {
           if (client.url.includes('oinsexpress') && 'focus' in client) {
+            client.navigate(url);
             return client.focus();
           }
         }
-        // Sinon → ouvrir l'app
         if (clients.openWindow) {
-          return clients.openWindow('/boss/map');
+          return clients.openWindow(url);
         }
       })
   );

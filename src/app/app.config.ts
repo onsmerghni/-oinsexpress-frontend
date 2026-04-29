@@ -12,9 +12,9 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('custom-sw.js', {
       enabled: !isDevMode(),
-      registrationStrategy: 'registerImmediately'  // ✅ enregistrement immédiat
+      registrationStrategy: 'registerImmediately'  //  enregistrement immédiat
     })
   ]
 };

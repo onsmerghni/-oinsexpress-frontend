@@ -8,6 +8,7 @@ import { AuthService } from '../../shared/services/auth.service';
 import { PushNotificationService } from '../../shared/services/push-notification.service';
 import { LivreurPosition, DrivingState } from '../../shared/models/tracking.model';
 import { Subscription, interval } from 'rxjs';
+import { PushService } from '../../shared/services/push.service';
 
 @Component({
   selector: 'app-boss-map',
@@ -34,12 +35,13 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
     private ws: WebsocketService,
     public auth: AuthService,
     private push: PushNotificationService,
+     private pushService: PushService, 
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    // ✅ Demander permission notifications via Service Worker
-    this.push.subscribeToPush();
+    //  Demander permission notifications via Service Worker
+    this.pushService.subscribeToPush();
 
     this.ws.connect();
     this.loadLivreurs();
