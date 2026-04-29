@@ -102,25 +102,37 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   }
 
   // Notifications push livreur
-  private showNotification(state: DrivingState): void {
-    if (!('Notification' in window)) return;
+ private showNotification(state: DrivingState): void {
+  if (!('Notification' in window)) return;
 
-    if (Notification.permission === 'granted') {
-      new Notification(
-        state === 'AGGRESSIVE' ? '🔴 Conduite dangereuse !' : '🟡 Conduite risquée',
-        {
-          body: state === 'AGGRESSIVE'
-            ? 'Ralentissez immédiatement !'
-            : 'Adaptez votre conduite',
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: 'driving-state'
-        }
-      );
+  const title = state === 'AGGRESSIVE'
+    ? '🔴 Conduite dangereuse !'
+    : '🟡 Conduite risquée';
+
+  const options = {
+    body: state === 'AGGRESSIVE'
+      ? 'Ralentissez immédiatement !'
+      : 'Adaptez votre conduite',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    tag: 'driving-state'
+  };
+
+  if (Notification.permission === 'granted') {
+    // Service Worker → notification fond d'écran
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(sw => {
+        sw.showNotification(title, options);
+      });
     } else {
-      Notification.requestPermission();
+      new Notification(title, options);
     }
+  } else {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') this.showNotification(state);
+    });
   }
+}
 
   getStateColor(): string {
     const state = this.drivingState();
