@@ -4,7 +4,6 @@ import { environment } from '../../../environments/environment';
 import { LivreurPosition, Alert } from '../models/tracking.model';
 import { AuthService } from './auth.service';
 
-// Déclarations globales pour stompjs 2.x et sockjs-client
 declare const SockJS: any;
 declare const Stomp: any;
 
@@ -29,6 +28,10 @@ export class WebsocketService {
     try {
       const socket = new SockJS(environment.wsUrl);
       this.client = Stomp.over(socket);
+
+      // ✅ Heartbeat pour garder connexion Render active
+      this.client.heartbeat.outgoing = 20000;
+      this.client.heartbeat.incoming = 20000;
 
       // Désactiver les logs console de stomp
       this.client.debug = () => {};
@@ -68,7 +71,7 @@ export class WebsocketService {
         }
       );
     } catch (e) {
-      console.warn('WebSocket non disponible (normal en développement sans backend)', e);
+      console.warn('WebSocket non disponible', e);
       this.connected.set(false);
     }
   }

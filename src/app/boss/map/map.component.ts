@@ -36,7 +36,7 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    //  Demander permission notifications au démarrage
+    // Demander permission notifications au démarrage
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -47,8 +47,6 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subs.push(
       this.ws.positions$.subscribe(pos => {
         this.handlePositionUpdate(pos);
-
-        //  Notification boss si livreur AGGRESSIVE ou RISKY
         if (pos.drivingState === 'AGGRESSIVE' || pos.drivingState === 'RISKY') {
           this.showNotification(pos);
         }
@@ -61,8 +59,9 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
       })
     );
 
+    // ✅ Polling toutes les 10 secondes (au lieu de 30)
     this.subs.push(
-      interval(30000).subscribe(() => this.loadLivreurs())
+      interval(10000).subscribe(() => this.loadLivreurs())
     );
   }
 
@@ -181,45 +180,43 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
         <strong>${pos.firstName} ${pos.lastName}</strong><br>
         <small>${pos.livreurId}</small><br>
         <div style="margin-top:6px">
-          <span> ${pos.speed.toFixed(0)} km/h</span><br>
+          <span>🚗 ${pos.speed.toFixed(0)} km/h</span><br>
           <span>État : ${this.translateState(pos.drivingState)}</span>
         </div>
       </div>
     `;
   }
 
-  // Notification push pour le boss
- private showNotification(pos: LivreurPosition): void {
-  if (!('Notification' in window)) return;
+  private showNotification(pos: LivreurPosition): void {
+    if (!('Notification' in window)) return;
 
-  const title = pos.drivingState === 'AGGRESSIVE'
-    ? `🔴 ${pos.firstName} ${pos.lastName} — Conduite dangereuse !`
-    : `🟡 ${pos.firstName} ${pos.lastName} — Conduite risquée`;
+    const title = pos.drivingState === 'AGGRESSIVE'
+      ? `🔴 ${pos.firstName} ${pos.lastName} — Conduite dangereuse !`
+      : `🟡 ${pos.firstName} ${pos.lastName} — Conduite risquée`;
 
-  const options = {
-    body: pos.drivingState === 'AGGRESSIVE'
-      ? `Livreur ${pos.livreurId} — Intervention urgente !`
-      : `Livreur ${pos.livreurId} — Surveillance recommandée`,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: `alert-${pos.livreurId}`
-  };
+    const options = {
+      body: pos.drivingState === 'AGGRESSIVE'
+        ? `Livreur ${pos.livreurId} — Intervention urgente !`
+        : `Livreur ${pos.livreurId} — Surveillance recommandée`,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: `alert-${pos.livreurId}`
+    };
 
-  if (Notification.permission === 'granted') {
-    //  Service Worker → notification fond d'écran
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(sw => {
-        sw.showNotification(title, options);
-      });
+    if (Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(sw => {
+          sw.showNotification(title, options);
+        });
+      } else {
+        new Notification(title, options);
+      }
     } else {
-      new Notification(title, options);
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') this.showNotification(pos);
+      });
     }
-  } else {
-    Notification.requestPermission().then(perm => {
-      if (perm === 'granted') this.showNotification(pos);
-    });
   }
-}
 
   selectLivreur(livreur: LivreurPosition): void {
     this.selectedLivreur.set(livreur);
