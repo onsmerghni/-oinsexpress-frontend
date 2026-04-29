@@ -36,14 +36,14 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    //  1. Demander permission notifications au démarrage
+    // ✅ 1. Demander permission notifications au démarrage
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     this.ws.connect();
 
-    //  2. Écouter le drivingState retourné par le backend via WebSocket
+    // ✅ 2. Écouter le drivingState retourné par le backend via WebSocket
     this.subs.push(
       this.ws.positions$.subscribe(pos => {
         const user = this.auth.currentUser();
@@ -104,7 +104,7 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
     this.uptime.set(elapsed >= 3600 ? `${h}:${m}:${s}` : `${m}:${s}`);
   }
 
-  //  Notifications push (centre de notification Android/iPhone)
+  // ✅ Notifications push (centre de notification Android/iPhone)
   private showNotification(state: DrivingState): void {
     if (!('Notification' in window)) return;
 
@@ -117,8 +117,7 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
             : 'Adaptez votre conduite',
           icon: '/icons/icon-192x192.png',
           badge: '/icons/icon-72x72.png',
-          tag: 'driving-state',   // remplace la notif précédente (pas de spam)
-          renotify: true
+          tag: 'driving-state'
         }
       );
     } else {
