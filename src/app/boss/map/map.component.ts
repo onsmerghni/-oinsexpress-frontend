@@ -5,6 +5,7 @@ import * as L from 'leaflet';
 import { TrackingService } from '../../shared/services/tracking.service';
 import { WebsocketService } from '../../shared/services/websocket.service';
 import { AuthService } from '../../shared/services/auth.service';
+import { PushNotificationService } from '../../shared/services/push-notification.service';
 import { LivreurPosition, DrivingState } from '../../shared/models/tracking.model';
 import { Subscription, interval } from 'rxjs';
 
@@ -32,14 +33,13 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
     private tracking: TrackingService,
     private ws: WebsocketService,
     public auth: AuthService,
+    private push: PushNotificationService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    // Demander permission notifications au démarrage
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    // ✅ Demander permission notifications via Service Worker
+    this.push.subscribeToPush();
 
     this.ws.connect();
     this.loadLivreurs();
@@ -47,8 +47,22 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subs.push(
       this.ws.positions$.subscribe(pos => {
         this.handlePositionUpdate(pos);
-        if (pos.drivingState === 'AGGRESSIVE' || pos.drivingState === 'RISKY') {
-          this.showNotification(pos);
+
+        // ✅ Notification push fond d'écran
+        if (pos.drivingState === 'AGGRESSIVE') {
+          this.push.showLocalNotification(
+            `🔴 ${pos.firstName} ${pos.lastName} — Conduite dangereuse !`,
+            `Livreur ${pos.livreurId} — Intervention urgente !`,
+            `alert-${pos.livreurId}`
+          );
+          this.unreadAlerts.update(v => v + 1);
+        } else if (pos.drivingState === 'RISKY') {
+          this.push.showLocalNotification(
+            `🟡 ${pos.firstName} ${pos.lastName} — Conduite risquée`,
+            `Livreur ${pos.livreurId} — Surveillance recommandée`,
+            `alert-${pos.livreurId}`
+          );
+          this.unreadAlerts.update(v => v + 1);
         }
       })
     );
@@ -59,7 +73,7 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
       })
     );
 
-    // ✅ Polling toutes les 10 secondes (au lieu de 30)
+    // ✅ Polling toutes les 10 secondes
     this.subs.push(
       interval(10000).subscribe(() => this.loadLivreurs())
     );
@@ -185,37 +199,6 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       </div>
     `;
-  }
-
-  private showNotification(pos: LivreurPosition): void {
-    if (!('Notification' in window)) return;
-
-    const title = pos.drivingState === 'AGGRESSIVE'
-      ? `🔴 ${pos.firstName} ${pos.lastName} — Conduite dangereuse !`
-      : `🟡 ${pos.firstName} ${pos.lastName} — Conduite risquée`;
-
-    const options = {
-      body: pos.drivingState === 'AGGRESSIVE'
-        ? `Livreur ${pos.livreurId} — Intervention urgente !`
-        : `Livreur ${pos.livreurId} — Surveillance recommandée`,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      tag: `alert-${pos.livreurId}`
-    };
-
-    if (Notification.permission === 'granted') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(sw => {
-          sw.showNotification(title, options);
-        });
-      } else {
-        new Notification(title, options);
-      }
-    } else {
-      Notification.requestPermission().then(perm => {
-        if (perm === 'granted') this.showNotification(pos);
-      });
-    }
   }
 
   selectLivreur(livreur: LivreurPosition): void {
