@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "dist/oinsexpress-frontend/browser",
   "headers": [
     {
       "source": "/custom-sw.js",
