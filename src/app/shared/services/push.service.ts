@@ -28,7 +28,7 @@ export class PushService {
     try {
       // 2. Récupérer la clé publique VAPID du backend
       const { publicKey } = await firstValueFrom(
-        this.http.get<{ publicKey: string }>(`${environment.apiUrl}/api/push/vapid-public-key`)
+        this.http.get<{ publicKey: string }>(`${environment.apiUrl}/push/vapid-public-key`)
       );
 
       // 3. Service Worker prêt
@@ -45,7 +45,7 @@ export class PushService {
 
       // 5. Envoyer subscription au backend
       await firstValueFrom(
-        this.http.post(`${environment.apiUrl}/api/push/subscribe`, subscription.toJSON())
+        this.http.post(`${environment.apiUrl}/push/subscribe`, subscription.toJSON())
       );
 
       console.log('[Push] Abonné avec succès ✅');
