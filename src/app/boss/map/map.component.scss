@@ -388,3 +388,40 @@
   }
   .user-name { display: none; }
 }
+@media (max-width: 480px) {
+  .top-header {
+    grid-template-columns: auto 1fr;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .header-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .user-menu {
+    margin-left: 4px;
+    padding-left: 8px;
+    gap: 4px;
+  }
+
+  .logo-mini {
+    width: 30px;
+    height: 30px;
+  }
+
+  .top-header h1 {
+    font-size: 15px;
+  }
+}
