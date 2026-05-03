@@ -15,6 +15,8 @@
     </div>
 
     <div class="header-right">
+
+      <!-- Alertes -->
       <button class="header-btn" (click)="goToAlerts()" title="Alertes">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -23,16 +25,29 @@
           <span class="badge">{{ unreadAlerts() }}</span>
         }
       </button>
+
+      <!-- Livreurs -->
       <button class="header-btn" (click)="goToList()" title="Livreurs">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2"/>
         </svg>
       </button>
+
+      <!-- Avis clients -->
       <button class="header-btn" (click)="goToAvisClients()" title="Avis clients">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
+
+      <!-- ✅ Classement IA — bouton séparé -->
+      <button class="header-btn" (click)="goToScoring()" title="Classement IA">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
       <div class="user-menu">
         <span class="user-name">{{ auth.currentUser()?.firstName }}</span>
         <button class="header-btn" (click)="signout()" title="Déconnexion">
@@ -41,6 +56,7 @@
           </svg>
         </button>
       </div>
+
     </div>
   </header>
 

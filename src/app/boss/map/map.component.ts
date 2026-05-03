@@ -225,6 +225,10 @@ export class BossMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/boss/avis-clients']);
   }
 
+  goToScoring(): void {
+  this.router.navigate(['/boss/scoring']);
+}
+
   signout(): void {
     this.auth.signout();
   }
