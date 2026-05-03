@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { AuthService } from '../../shared/services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -35,6 +36,14 @@ interface LivreurScore {
   template: `
     <div class="scoring-container">
 
+      <!-- Bouton retour -->
+      <button class="back-btn" (click)="goBack()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Retour
+      </button>
+
       <!-- Header -->
       <div class="scoring-header">
         <div class="header-left">
@@ -42,21 +51,9 @@ interface LivreurScore {
           <p class="subtitle">Mis à jour chaque semaine • Basé sur conduite, avis clients et présence</p>
         </div>
         <div class="period-selector">
-          <button
-            [class.active]="periode() === 1"
-            (click)="changerPeriode(1)">
-            Ce mois
-          </button>
-          <button
-            [class.active]="periode() === 3"
-            (click)="changerPeriode(3)">
-            3 mois
-          </button>
-          <button
-            [class.active]="periode() === 12"
-            (click)="changerPeriode(12)">
-            12 mois
-          </button>
+          <button [class.active]="periode() === 1" (click)="changerPeriode(1)">Ce mois</button>
+          <button [class.active]="periode() === 3" (click)="changerPeriode(3)">3 mois</button>
+          <button [class.active]="periode() === 12" (click)="changerPeriode(12)">12 mois</button>
         </div>
       </div>
 
@@ -69,9 +66,9 @@ interface LivreurScore {
       }
 
       <!-- Podium top 3 -->
-      @if (!loading() && scores().length >= 3) {
+      @if (!loading() && scores().length >= 2) {
         <div class="podium">
-          <!-- 2ème -->
+          @if (scores().length >= 2) {
           <div class="podium-card silver">
             <div class="podium-rang">🥈</div>
             <div class="avatar">{{ scores()[1].firstName[0] }}</div>
@@ -79,7 +76,7 @@ interface LivreurScore {
             <div class="podium-score">{{ scores()[1].scoreFinal }}</div>
             <div class="podium-bar silver-bar"></div>
           </div>
-          <!-- 1er -->
+          }
           <div class="podium-card gold">
             <div class="podium-rang">🥇</div>
             <div class="avatar gold-avatar">{{ scores()[0].firstName[0] }}</div>
@@ -87,7 +84,6 @@ interface LivreurScore {
             <div class="podium-score">{{ scores()[0].scoreFinal }}</div>
             <div class="podium-bar gold-bar"></div>
           </div>
-          <!-- 3ème -->
           @if (scores().length >= 3) {
           <div class="podium-card bronze">
             <div class="podium-rang">🥉</div>
@@ -100,34 +96,33 @@ interface LivreurScore {
         </div>
       }
 
-      <!-- Tableau classement complet -->
+      <!-- Liste classement -->
       @if (!loading() && scores().length > 0) {
         <div class="classement-list">
           @for (s of scores(); track s.livreurId) {
             <div class="livreur-card" [class.top1]="s.rang === 1">
 
-              <!-- Rang + nom -->
               <div class="card-left">
-                <div class="rang-badge" [style.background]="getRangColor(s.rang)">
-                  {{ s.rang }}
-                </div>
+                <div class="rang-badge" [style.background]="getRangColor(s.rang)">{{ s.rang }}</div>
                 <div class="livreur-info">
                   <div class="livreur-nom">{{ s.firstName }} {{ s.lastName }}</div>
                   <div class="livreur-id">{{ s.livreurId }}</div>
-                  <div class="badge-pill" [style.background]="s.badgeColor + '20'"
-                       [style.color]="s.badgeColor" [style.border]="'1px solid ' + s.badgeColor">
+                  <div class="badge-pill"
+                       [style.background]="s.badgeColor + '20'"
+                       [style.color]="s.badgeColor"
+                       [style.border]="'1px solid ' + s.badgeColor">
                     {{ s.badge }}
                   </div>
                 </div>
               </div>
 
-              <!-- Score principal + évolution -->
               <div class="card-center">
                 <div class="score-circle" [style.border-color]="getScoreColor(s.scoreFinal)">
                   <span class="score-value">{{ s.scoreFinal }}</span>
                   <span class="score-label">/100</span>
                 </div>
-                <div class="evolution" [class.up]="s.tendance === 'UP'"
+                <div class="evolution"
+                     [class.up]="s.tendance === 'UP'"
                      [class.down]="s.tendance === 'DOWN'"
                      [class.stable]="s.tendance === 'STABLE'">
                   {{ s.tendance === 'UP' ? '↑' : s.tendance === 'DOWN' ? '↓' : '→' }}
@@ -135,7 +130,6 @@ interface LivreurScore {
                 </div>
               </div>
 
-              <!-- Sous-scores -->
               <div class="card-right">
                 <div class="sub-score">
                   <span class="sub-label">🚗 Conduite</span>
@@ -175,7 +169,6 @@ interface LivreurScore {
                 </div>
               </div>
 
-              <!-- Stats rapides -->
               <div class="card-stats">
                 <div class="stat">
                   <span class="stat-value">{{ s.nombreAvis }}</span>
@@ -217,6 +210,22 @@ interface LivreurScore {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
+    /* ✅ Bouton retour */
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 8px 0;
+      margin-bottom: 16px;
+      transition: color 0.2s;
+    }
+    .back-btn:hover { color: #f97316; }
+
     .scoring-header {
       display: flex;
       justify-content: space-between;
@@ -229,10 +238,7 @@ interface LivreurScore {
     h1 { margin: 0; font-size: 22px; color: #1e293b; }
     .subtitle { margin: 4px 0 0; font-size: 13px; color: #64748b; }
 
-    .period-selector {
-      display: flex;
-      gap: 8px;
-    }
+    .period-selector { display: flex; gap: 8px; }
     .period-selector button {
       padding: 6px 14px;
       border: 1px solid #e2e8f0;
@@ -249,11 +255,7 @@ interface LivreurScore {
       border-color: #f97316;
     }
 
-    .loading {
-      text-align: center;
-      padding: 48px;
-      color: #64748b;
-    }
+    .loading { text-align: center; padding: 48px; color: #64748b; }
     .spinner {
       width: 40px; height: 40px;
       border: 3px solid #e2e8f0;
@@ -264,7 +266,6 @@ interface LivreurScore {
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Podium */
     .podium {
       display: flex;
       justify-content: center;
@@ -274,18 +275,13 @@ interface LivreurScore {
       padding: 24px 16px 0;
     }
     .podium-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      min-width: 90px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px; min-width: 90px;
     }
     .podium-rang { font-size: 24px; }
     .avatar {
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      color: #475569;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #e2e8f0; color: #475569;
       display: flex; align-items: center; justify-content: center;
       font-weight: bold; font-size: 18px;
     }
@@ -293,21 +289,15 @@ interface LivreurScore {
     .podium-name { font-weight: 600; font-size: 13px; color: #1e293b; }
     .podium-score { font-size: 20px; font-weight: bold; color: #f97316; }
     .podium-bar { width: 80px; border-radius: 4px 4px 0 0; }
-    .gold-bar { height: 60px; background: #f59e0b; }
+    .gold-bar   { height: 60px; background: #f59e0b; }
     .silver-bar { height: 40px; background: #94a3b8; }
     .bronze-bar { height: 25px; background: #b45309; }
 
-    /* Liste classement */
     .livreur-card {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      transition: box-shadow 0.2s;
+      display: flex; align-items: center; gap: 16px;
+      background: white; border: 1px solid #e2e8f0;
+      border-radius: 12px; padding: 16px;
+      margin-bottom: 12px; transition: box-shadow 0.2s;
       flex-wrap: wrap;
     }
     .livreur-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -318,54 +308,40 @@ interface LivreurScore {
 
     .card-left { display: flex; align-items: center; gap: 12px; min-width: 160px; }
     .rang-badge {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: bold; font-size: 16px;
-      flex-shrink: 0;
+      width: 36px; height: 36px; border-radius: 50%;
+      color: white; display: flex; align-items: center;
+      justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;
     }
     .livreur-nom { font-weight: 600; font-size: 15px; color: #1e293b; }
-    .livreur-id { font-size: 12px; color: #94a3b8; }
+    .livreur-id  { font-size: 12px; color: #94a3b8; }
     .badge-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 4px;
+      display: inline-block; padding: 2px 8px;
+      border-radius: 12px; font-size: 11px;
+      font-weight: 600; margin-top: 4px;
     }
 
     .card-center {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 4px; min-width: 80px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px; min-width: 80px;
     }
     .score-circle {
-      width: 64px; height: 64px;
-      border-radius: 50%;
-      border: 3px solid;
+      width: 64px; height: 64px; border-radius: 50%; border: 3px solid;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
     }
     .score-value { font-size: 20px; font-weight: bold; color: #1e293b; line-height: 1; }
     .score-label { font-size: 10px; color: #94a3b8; }
-    .evolution {
-      font-size: 12px; font-weight: 600; padding: 2px 8px;
-      border-radius: 12px;
-    }
-    .evolution.up { color: #10b981; background: #d1fae5; }
-    .evolution.down { color: #ef4444; background: #fee2e2; }
+    .evolution { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 12px; }
+    .evolution.up     { color: #10b981; background: #d1fae5; }
+    .evolution.down   { color: #ef4444; background: #fee2e2; }
     .evolution.stable { color: #64748b; background: #f1f5f9; }
 
     .card-right { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
-    .sub-score {
-      display: flex; align-items: center; gap: 8px;
-    }
-    .sub-label { font-size: 11px; color: #64748b; min-width: 70px; }
+    .sub-score  { display: flex; align-items: center; gap: 8px; }
+    .sub-label  { font-size: 11px; color: #64748b; min-width: 70px; }
     .progress-bar {
-      flex: 1; height: 6px;
-      background: #e2e8f0; border-radius: 3px;
-      overflow: hidden;
+      flex: 1; height: 6px; background: #e2e8f0;
+      border-radius: 3px; overflow: hidden;
     }
     .progress-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
     .sub-value { font-size: 11px; font-weight: 600; color: #1e293b; min-width: 28px; text-align: right; }
@@ -383,17 +359,22 @@ interface LivreurScore {
 })
 export class BossScoringComponent implements OnInit {
 
-  scores    = signal<LivreurScore[]>([]);
-  loading   = signal(true);
-  periode   = signal(1);
+  scores  = signal<LivreurScore[]>([]);
+  loading = signal(true);
+  periode = signal(1);
 
   constructor(
     private http: HttpClient,
-    public auth: AuthService
+    public auth: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.chargerClassement();
+  }
+
+  goBack(): void {
+    this.router.navigate(['/boss/map']);
   }
 
   changerPeriode(mois: number): void {
@@ -416,7 +397,6 @@ export class BossScoringComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur scoring:', err);
-        // Données démo si API pas encore déployée
         this.scores.set(this.getDemoData());
         this.loading.set(false);
       }
@@ -437,7 +417,6 @@ export class BossScoringComponent implements OnInit {
     return '#ef4444';
   }
 
-  // Données démo pour tester sans backend
   private getDemoData(): LivreurScore[] {
     return [
       {
@@ -448,15 +427,6 @@ export class BossScoringComponent implements OnInit {
         totalPositions: 450, positionsNormal: 400, positionsRisky: 40, positionsAggressive: 10,
         moyenneAvis: 4.4, nombreAvis: 12, nombreAlertes: 3, joursConnecte: 18,
         badge: 'EXCELLENT', badgeColor: '#10B981'
-      },
-      {
-        livreurId: 'LIV-002', firstName: 'Hamdi', lastName: 'Ben Ali',
-        rang: 2, scoreFinal: 72.1,
-        scoreConduite: 75, scoreAvis: 72, scorePresence: 70, scoreAlertes: 60,
-        evolutionScore: -1.5, tendance: 'DOWN',
-        totalPositions: 320, positionsNormal: 270, positionsRisky: 40, positionsAggressive: 10,
-        moyenneAvis: 3.8, nombreAvis: 8, nombreAlertes: 4, joursConnecte: 14,
-        badge: 'BON', badgeColor: '#3B82F6'
       }
     ];
   }
