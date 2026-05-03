@@ -75,10 +75,9 @@ export const routes: Routes = [
         loadComponent: () => import('./boss/avis-clients/avis-clients.component').then(m => m.AvisClientsComponent)
       }, 
       {
-  path: 'boss/scoring',
-  loadComponent: () =>
-    import('./boss/scoring/scoring.component').then(m => m.BossScoringComponent)
-}
+        path: 'scoring',
+        loadComponent: () => import('./boss/scoring/scoring.component').then(m => m.BossScoringComponent)
+      }
 
 
     ]
