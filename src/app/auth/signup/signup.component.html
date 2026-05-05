@@ -60,6 +60,9 @@
           @if (hasError('livreurId', 'pattern')) {
             <div class="form-error">Format : LIV-XXX (ex: LIV-001)</div>
           }
+          @if (livreurIdServerError()) {
+            <div class="form-error">{{ livreurIdServerError() }}</div>
+          }
         </div>
       }
 
@@ -115,6 +118,9 @@
         }
         @if (hasError('email', 'email')) {
           <div class="form-error">Format invalide</div>
+        }
+        @if (emailServerError()) {
+          <div class="form-error">{{ emailServerError() }}</div>
         }
       </div>
 

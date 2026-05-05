@@ -16,6 +16,8 @@ export class SignupComponent {
   form: FormGroup;
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
+  emailServerError = signal<string | null>(null);
+  livreurIdServerError = signal<string | null>(null);
   selectedRole = signal<UserRole>('LIVREUR');
   showPassword = signal<boolean>(false);
   showConfirm = signal<boolean>(false);
@@ -104,6 +106,8 @@ export class SignupComponent {
 
     this.loading.set(true);
     this.error.set(null);
+    this.emailServerError.set(null);
+    this.livreurIdServerError.set(null);
 
     const { confirmPassword, ...data } = this.form.value;
 
@@ -120,7 +124,15 @@ export class SignupComponent {
       error: (err) => {
         this.loading.set(false);
         if (err.status === 409) {
-          this.error.set('Cet email est déjà utilisé');
+          const msg: string = err.error?.message || '';
+          // Le backend renvoie "ID livreur déjà utilisé" ou "Email déjà utilisé"
+          if (msg.toLowerCase().includes('livreur')) {
+            this.livreurIdServerError.set('Cet ID livreur est déjà utilisé par un autre compte');
+            this.form.get('livreurId')?.setErrors({ serverError: true });
+          } else {
+            this.emailServerError.set('Cet email est déjà associé à un compte existant');
+            this.form.get('email')?.setErrors({ serverError: true });
+          }
         } else {
           this.error.set(err.error?.message || 'Erreur lors de l\'inscription');
         }
