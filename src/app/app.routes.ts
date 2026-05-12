@@ -3,7 +3,13 @@ import { authGuard } from './shared/guards/auth.guard';
 import { roleGuard } from './shared/guards/role.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
+  { path: '', redirectTo: '/splash', pathMatch: 'full' },
+
+  // Splash screen
+  {
+    path: 'splash',
+    loadComponent: () => import('./auth/splash/splash.component').then(m => m.SplashComponent)
+  },
 
   // Public routes
   {
