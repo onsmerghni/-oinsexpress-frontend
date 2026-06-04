@@ -27,18 +27,6 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   startTime = Date.now();
   codeCopied = signal<boolean>(false);
 
-  // Incidents temps réel
-  incidents = signal<any[]>([]);
-  unreadCount = signal<number>(0);
-  showIncidents = signal<boolean>(false);
-
-  typeMap: Record<string, { icon: string; label: string }> = {
-    JAM:          { icon: '🚗', label: 'Embouteillage' },
-    ACCIDENT:     { icon: '💥', label: 'Accident' },
-    ROAD_BLOCKED: { icon: '🚧', label: 'Route bloquée' },
-    CONSTRUCTION: { icon: '🔨', label: 'Travaux' }
-  };
-
   constructor(
     private geo: GeolocationService,
     private ws: WebsocketService,
@@ -48,21 +36,14 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // 1. Demander permission notifications au démarrage
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     this.ws.connect();
 
-    // Écouter les incidents des autres livreurs
-    this.subs.push(
-      this.ws.traffic$.subscribe(report => {
-        this.incidents.update(list => [{ ...report, read: false }, ...list].slice(0, 20));
-        this.unreadCount.update(n => n + 1);
-      })
-    );
-
-    // Écouter le drivingState
+    // 2. Écouter le drivingState retourné par le backend via WebSocket
     this.subs.push(
       this.ws.positions$.subscribe(pos => {
         const user = this.auth.currentUser();
@@ -75,11 +56,12 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    // GPS tracking
+    // 3. GPS tracking → envoyer position au backend
     this.subs.push(
       this.geo.startTracking().subscribe(pos => {
         this.position.set(pos);
         this.speed.set(pos.speed ? pos.speed * 3.6 : 0);
+
         const user = this.auth.currentUser();
         if (user && this.ws.connected()) {
           this.ws.sendPosition({
@@ -98,7 +80,7 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Timer uptime
+    // 4. Timer uptime
     this.subs.push(
       interval(1000).subscribe(() => this.updateUptime())
     );
@@ -111,20 +93,6 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
     this.geo.stopTracking();
   }
 
-  toggleIncidents(): void {
-    this.showIncidents.update(v => !v);
-    if (this.showIncidents()) {
-      this.unreadCount.set(0);
-    }
-  }
-
-  timeAgo(ts: number): string {
-    const diff = Math.floor((Date.now() - ts) / 1000);
-    if (diff < 60) return 'À l\'instant';
-    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
-    return `Il y a ${Math.floor(diff / 3600)}h`;
-  }
-
   private updateUptime(): void {
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
     const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
@@ -133,23 +101,38 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
     this.uptime.set(elapsed >= 3600 ? `${h}:${m}:${s}` : `${m}:${s}`);
   }
 
-  private showNotification(state: DrivingState): void {
-    if (!('Notification' in window)) return;
-    const title = state === 'AGGRESSIVE' ? '🔴 Conduite dangereuse !' : '🟡 Conduite risquée';
-    const options = {
-      body: state === 'AGGRESSIVE' ? 'Ralentissez immédiatement !' : 'Adaptez votre conduite',
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      tag: 'driving-state'
-    };
-    if (Notification.permission === 'granted') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(sw => sw.showNotification(title, options));
-      } else {
-        new Notification(title, options);
-      }
+  // Notifications push livreur
+ private showNotification(state: DrivingState): void {
+  if (!('Notification' in window)) return;
+
+  const title = state === 'AGGRESSIVE'
+    ? '🔴 Conduite dangereuse !'
+    : '🟡 Conduite risquée';
+
+  const options = {
+    body: state === 'AGGRESSIVE'
+      ? 'Ralentissez immédiatement !'
+      : 'Adaptez votre conduite',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    tag: 'driving-state'
+  };
+
+  if (Notification.permission === 'granted') {
+    // Service Worker → notification fond d'écran
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(sw => {
+        sw.showNotification(title, options);
+      });
+    } else {
+      new Notification(title, options);
     }
+  } else {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') this.showNotification(state);
+    });
   }
+}
 
   getStateColor(): string {
     const state = this.drivingState();
@@ -159,23 +142,32 @@ export class LivreurDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStateLabel(): string {
+    const state = this.drivingState();
     const labels: Record<DrivingState, string> = {
-      'NORMAL': 'NORMAL', 'RISKY': 'RISQUÉ', 'AGGRESSIVE': 'DANGEREUX'
+      'NORMAL': 'NORMAL',
+      'RISKY': 'RISQUÉ',
+      'AGGRESSIVE': 'DANGEREUX'
     };
-    return labels[this.drivingState()];
+    return labels[state];
   }
 
   getStateMessage(): string {
+    const state = this.drivingState();
     const msgs: Record<DrivingState, string> = {
       'NORMAL': 'Continuez votre conduite — Tout va bien',
       'RISKY': 'Attention — Adaptez votre conduite',
       'AGGRESSIVE': 'Danger — Ralentissez immédiatement'
     };
-    return msgs[this.drivingState()];
+    return msgs[state];
   }
 
-  goToSignaler(): void { this.router.navigate(['/livreur/signaler']); }
-  signout(): void { this.auth.signout(); }
+  goToSignaler(): void {
+    this.router.navigate(['/livreur/signaler']);
+  }
+
+  signout(): void {
+    this.auth.signout();
+  }
 
   copyCode(code: string): void {
     navigator.clipboard.writeText(code).then(() => {

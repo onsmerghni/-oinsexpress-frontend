@@ -16,7 +16,7 @@
         </svg>
       </div>
       <h2>Signalement envoyé !</h2>
-      <p>Les autres livreurs ont été notifiés</p>
+      <p>Merci pour votre contribution</p>
     </div>
   } @else {
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -80,33 +80,4 @@
       </button>
     </form>
   }
-
-  <!-- Incidents signalés en temps réel par les autres livreurs -->
-  @if (incidents().length > 0) {
-    <div class="incidents-section">
-      <div class="incidents-header">
-        <div class="incidents-title">
-          <span class="pulse-dot"></span>
-          <span>Incidents signalés près de vous</span>
-        </div>
-        <span class="incidents-count">{{ incidents().length }}</span>
-      </div>
-
-      @for (inc of incidents(); track inc.timestamp) {
-        <div class="incident-card">
-          <div class="incident-icon" [style.background]="typeMap[inc.type]?.color + '22'">
-            {{ typeMap[inc.type]?.icon }}
-          </div>
-          <div class="incident-body">
-            <div class="incident-top">
-              <span class="incident-type">{{ typeMap[inc.type]?.label }}</span>
-              <span class="incident-time">{{ timeAgo(inc.timestamp) }}</span>
-            </div>
-            <p class="incident-desc">{{ inc.description }}</p>
-          </div>
-        </div>
-      }
-    </div>
-  }
-
 </div>
