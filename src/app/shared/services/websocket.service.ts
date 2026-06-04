@@ -18,6 +18,9 @@ export class WebsocketService {
   private alertsSubject = new Subject<Alert>();
   public alerts$ = this.alertsSubject.asObservable();
 
+  private trafficSubject = new Subject<any>();
+  public traffic$ = this.trafficSubject.asObservable();
+
   private reconnectTimer: any = null;
 
   constructor(private auth: AuthService) {}
@@ -29,11 +32,8 @@ export class WebsocketService {
       const socket = new SockJS(environment.wsUrl);
       this.client = Stomp.over(socket);
 
-      // ✅ Heartbeat pour garder connexion Render active
       this.client.heartbeat.outgoing = 20000;
       this.client.heartbeat.incoming = 20000;
-
-      // Désactiver les logs console de stomp
       this.client.debug = () => {};
 
       const headers = {
@@ -50,19 +50,18 @@ export class WebsocketService {
           }
 
           this.client.subscribe('/topic/positions', (msg: any) => {
-            try {
-              this.positionsSubject.next(JSON.parse(msg.body));
-            } catch (e) {
-              console.error('WebSocket: erreur parsing position', e);
-            }
+            try { this.positionsSubject.next(JSON.parse(msg.body)); }
+            catch (e) { console.error('WebSocket: erreur parsing position', e); }
           });
 
           this.client.subscribe('/topic/alerts', (msg: any) => {
-            try {
-              this.alertsSubject.next(JSON.parse(msg.body));
-            } catch (e) {
-              console.error('WebSocket: erreur parsing alert', e);
-            }
+            try { this.alertsSubject.next(JSON.parse(msg.body)); }
+            catch (e) { console.error('WebSocket: erreur parsing alert', e); }
+          });
+
+          this.client.subscribe('/topic/traffic', (msg: any) => {
+            try { this.trafficSubject.next(JSON.parse(msg.body)); }
+            catch (e) { console.error('WebSocket: erreur parsing traffic', e); }
           });
         },
         (_error: any) => {
