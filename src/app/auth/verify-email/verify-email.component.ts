@@ -35,7 +35,8 @@ export class VerifyEmailComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
       this.email.set(params['email'] || '');
-      this.livreurId.set(params['livreurId'] || null);
+     const role = params['role'] || '';
+this.livreurId.set(role === 'LIVREUR' ? (params['livreurId'] || null) : null);
       if (!params['email']) {
         this.router.navigate(['/signup']);
       }

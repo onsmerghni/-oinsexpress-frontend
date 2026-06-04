@@ -117,9 +117,10 @@ export class SignupComponent {
         this.router.navigate(['/verify-email'], {
           queryParams: {
             email: res.email,
+            role: data.role,
             livreurId: res.livreurId
-          }
-        });
+  }
+});
       },
       error: (err) => {
         this.loading.set(false);
